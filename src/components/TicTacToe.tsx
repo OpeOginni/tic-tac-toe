@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 type Player = 'X' | 'O';
 type Winner = Player | 'draw' | null;
@@ -11,17 +11,29 @@ type GameState = {
   board: Board;
   currentPlayer: Player;
   winner: Winner;
+  scores: {
+    X: number;
+    O: number;
+  };
+  winningCells?: [number, number][];
 };
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
 
 export default function TicTacToe() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = searchParams.get('room');
+  const [playerId, setPlayerId] = useState<string>('');
   const [playerRole, setPlayerRole] = useState<Player | null>(null);
-  const [playerId] = useState(() => localStorage.getItem('playerId') || Math.random().toString(36).substring(2));
+  const [error, setError] = useState<string | null>(null);
   
+  // Initialize playerId from localStorage on client side
+  useEffect(() => {
+    const storedPlayerId = localStorage.getItem('playerId') || Math.random().toString(36).substring(2);
+    setPlayerId(storedPlayerId);
+    localStorage.setItem('playerId', storedPlayerId);
+  }, []);
+
   const [board, setBoard] = useState<Board>(Array(3).fill(null).map(() => Array(3).fill(null)));
   const [currentPlayer, setCurrentPlayer] = useState<Player>('X');
   const [winner, setWinner] = useState<Winner>(null);
@@ -29,19 +41,13 @@ export default function TicTacToe() {
   const [isConnected, setIsConnected] = useState(false);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [opponentConnected, setOpponentConnected] = useState(false);
+  const [scores, setScores] = useState<GameState['scores']>({ X: 0, O: 0 });
+  const [winningCells, setWinningCells] = useState<[number, number][]>([]);
 
-  // Store playerId in localStorage
   useEffect(() => {
-    localStorage.setItem('playerId', playerId);
-  }, [playerId]);
+    if (!roomId || !playerId) return;
 
-  // Connect to WebSocket
-  useEffect(() => {
-    if (!roomId) {
-      router.push('/');
-      return;
-    }
-
+    // Connect to WebSocket with only roomId and playerId
     const wsUrl = `${WS_URL}?room=${roomId}&playerId=${playerId}`;
     const socket = new WebSocket(wsUrl);
 
@@ -53,21 +59,18 @@ export default function TicTacToe() {
       const data = JSON.parse(event.data);
       
       if (data.type === 'state') {
-        const { state, players, role } = data;
+        const { state, role, opponentConnected } = data;
         setBoard(state.board);
         setCurrentPlayer(state.currentPlayer);
         setWinner(state.winner);
-        
-        // Set role if provided
-        if (role) {
-          setPlayerRole(role);
-        }
-        
-        // Check if opponent is connected
-        const opponentRole = role === 'X' ? 'O' : 'X';
-        setOpponentConnected(!!players[opponentRole]);
+        setPlayerRole(role);
+        setOpponentConnected(opponentConnected);
+        setScores(state.scores);
+        setWinningCells(state.winningCells || []);
       }
-      
+      else if (data.type === 'error') {
+        setError(data.message);
+      }
       else if (data.type === 'playerDisconnected') {
         setOpponentConnected(false);
       }
@@ -83,10 +86,10 @@ export default function TicTacToe() {
     return () => {
       socket.close();
     };
-  }, [roomId, playerId, router]);
+  }, [roomId, playerId]);
 
   const handleCellClick = (row: number, col: number) => {
-    if (!ws || board[row][col] || winner || currentPlayer !== playerRole || !isConnected) return;
+    if (!ws || board[row][col] || winner || currentPlayer !== playerRole || !isConnected || !opponentConnected) return;
 
     ws.send(JSON.stringify({
       type: 'move',
@@ -107,73 +110,97 @@ export default function TicTacToe() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!roomId) return null;
+  const isWinningCell = (row: number, col: number) => {
+    return winningCells.some(([r, c]) => r === row && c === col);
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900">
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <div className="p-8">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-6 text-white">Tic Tac Toe</h1>
-          <div className="mb-6">
-            <p className="text-xl text-gray-400">
-              You are playing as{' '}
-              <span 
-                className={playerRole === 'X' ? 'text-blue-400' : 'text-red-400'}
-                style={{ fontFamily: 'Comic Sans MS' }}
-              >
-                {playerRole || '...'}
-              </span>
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              {!isConnected ? '🔴 Connecting...' : 
-               !opponentConnected ? '🟡 Waiting for opponent...' : 
-               '🟢 Game in progress'}
-            </p>
-          </div>
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={copyRoomLink}
-              className="px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
-            >
-              {copied ? '✓ Copied!' : 'Share Game Link'}
-            </button>
-            {winner && opponentConnected && (
-              <button
-                onClick={handleRestart}
-                className="px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
-              >
-                Restart Game
-              </button>
-            )}
-          </div>
+          <h1 className="text-4xl font-bold mb-6 text-white">H&B Tic Tac Toe</h1>
+          {error ? (
+            <div className="mb-6">
+              <p className="text-xl text-red-400">{error}</p>
+              <a href="/" className="mt-4 inline-block px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors">
+                Start New Game
+              </a>
+            </div>
+          ) : (
+            <>
+              <div className="mb-6">
+                <p className="text-xl text-gray-400">
+                  You are playing as{' '}
+                  <span 
+                    className={playerRole === 'X' ? 'text-blue-400' : 'text-red-400'}
+                    style={{ fontFamily: 'Comic Sans MS' }}
+                  >
+                    {playerRole || '...'}
+                  </span>
+                </p>
+                <div className="flex justify-center gap-8 mt-4">
+                  <p className="text-blue-400">X: {scores.X}</p>
+                  <p className="text-red-400">O: {scores.O}</p>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  {!isConnected ? '🔴 Connecting...' : 
+                   !opponentConnected ? '🟡 Waiting for opponent...' : 
+                   '🟢 Game in progress'}
+                </p>
+              </div>
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={copyRoomLink}
+                  className="px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
+                >
+                  {copied ? '✓ Copied!' : 'Share Game Link'}
+                </button>
+                {winner && opponentConnected && (
+                  <button
+                    onClick={handleRestart}
+                    className="px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors"
+                  >
+                    {`Restart (${currentPlayer} starts next)`}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-px bg-gray-600 p-px mb-8">
-          {board.map((row, i) =>
-            row.map((cell, j) => (
-              <button
-                key={`${i}-${j}`}
-                onClick={() => handleCellClick(i, j)}
-                disabled={!!winner || !!cell || currentPlayer !== playerRole || !isConnected || !opponentConnected}
-                className={`w-24 h-24 bg-gray-900 flex items-center justify-center transition-all ${
-                  !cell && !winner && currentPlayer === playerRole && isConnected && opponentConnected
-                    ? 'hover:bg-gray-800'
-                    : ''
-                }`}
-                style={{ fontFamily: 'Comic Sans MS' }}
-              >
-                <span
-                  className={`text-6xl ${
-                    cell === 'X'
-                      ? 'text-blue-400'
-                      : 'text-red-400'
+        <div className="mb-8 flex justify-center">
+          <div className="inline-grid grid-cols-3 bg-gray-900">
+            {board.map((row, i) =>
+              row.map((cell, j) => (
+                <button
+                  key={`${i}-${j}`}
+                  onClick={() => handleCellClick(i, j)}
+                  disabled={!!winner || !!cell || currentPlayer !== playerRole || !isConnected || !opponentConnected}
+                  className={`w-28 h-28 flex items-center justify-center transition-all
+                    ${i < 2 ? 'border-b-2' : ''} 
+                    ${j < 2 ? 'border-r-2' : ''} 
+                    border-gray-600
+                    ${!cell && !winner && currentPlayer === playerRole && isConnected && opponentConnected
+                      ? 'hover:bg-gray-800'
+                      : ''
                   }`}
+                  style={{ fontFamily: 'Comic Sans MS' }}
                 >
-                  {cell}
-                </span>
-              </button>
-            ))
-          )}
+                  <span
+                    className={`text-7xl ${
+                      isWinningCell(i, j)
+                        ? 'text-green-400'
+                        : cell === 'X'
+                        ? 'text-blue-400'
+                        : 'text-red-400'
+                    }`}
+                  >
+                    {cell}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="text-center text-lg">
@@ -193,4 +220,4 @@ export default function TicTacToe() {
       </div>
     </div>
   );
-} 
+}

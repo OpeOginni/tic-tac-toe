@@ -8,6 +8,12 @@ type GameState = {
   board: Board;
   currentPlayer: Player;
   winner: Player | 'draw' | null;
+  scores: {
+    X: number;
+    O: number;
+  };
+  startingPlayer: Player;  // Track who starts each game
+  winningCells?: [number, number][]; // Add winning cells coordinates
 };
 
 type Game = {
@@ -27,21 +33,31 @@ const games = new Map<string, Game>();
 const server = createServer();
 const wss = new WebSocketServer({ server });
 
-function createInitialState(): GameState {
+function createInitialState(startingPlayer: Player = 'X'): GameState {
   return {
     board: Array(3).fill(null).map(() => Array(3).fill(null)),
-    currentPlayer: 'X',
+    currentPlayer: startingPlayer,
     winner: null,
+    scores: {
+      X: 0,
+      O: 0
+    },
+    startingPlayer
   };
 }
 
 function broadcastGameState(game: Game) {
-  Object.values(game.players).forEach((player) => {
-    player?.send(JSON.stringify({ 
-      type: 'state', 
-      state: game.state,
-      players: game.playerIds // Send player IDs so client knows who is who
-    }));
+  Object.entries(game.players).forEach(([playerRole, ws]) => {
+    if (ws) {
+      const otherRole = playerRole === 'X' ? 'O' : 'X';
+      ws.send(JSON.stringify({ 
+        type: 'state', 
+        state: game.state,
+        players: game.playerIds,
+        role: playerRole,
+        opponentConnected: !!game.players[otherRole]
+      }));
+    }
   });
 }
 
@@ -52,7 +68,7 @@ wss.on('connection', (ws, req) => {
   const { query } = parse(url, true);
   const roomId = query.room as string;
   const playerId = query.playerId as string;
-  let role = query.role as Player;
+  let role: Player;
 
   if (!roomId || !playerId) {
     ws.close();
@@ -75,10 +91,11 @@ wss.on('connection', (ws, req) => {
     role = 'X';
   } else if (game.playerIds.O === playerId) {
     role = 'O';
-  } else if (!role || (game.playerIds[role] && game.playerIds[role] !== playerId)) {
-    // Assign available role if none specified or requested role is taken
+  } else {
+    // Assign first available role
     const availableRole = !game.playerIds.X ? 'X' : !game.playerIds.O ? 'O' : undefined;
     if (!availableRole) {
+      ws.send(JSON.stringify({ type: 'error', message: 'Room is full' }));
       ws.close();
       return;
     }
@@ -89,13 +106,8 @@ wss.on('connection', (ws, req) => {
   game.players[role] = ws;
   game.playerIds[role] = playerId;
 
-  // Send initial state
-  ws.send(JSON.stringify({ 
-    type: 'state', 
-    state: game.state,
-    players: game.playerIds,
-    role // Send assigned role back to client
-  }));
+  // Broadcast updated state to all players
+  broadcastGameState(game);
 
   // Handle moves and restarts
   ws.on('message', (data) => {
@@ -114,7 +126,14 @@ wss.on('connection', (ws, req) => {
           game.state.board[row][col] = role;
           
           // Check winner
-          game.state.winner = checkWinner(game.state.board);
+          const { winner, winningCells } = checkWinner(game.state.board);
+          game.state.winner = winner;
+          game.state.winningCells = winningCells;
+          
+          // Update scores if there's a winner
+          if (winner && winner !== 'draw') {
+            game.state.scores[winner]++;
+          }
           
           // Switch player
           game.state.currentPlayer = role === 'X' ? 'O' : 'X';
@@ -127,7 +146,13 @@ wss.on('connection', (ws, req) => {
       else if (message.type === 'restart' && game.state.winner) {
         // Only allow restart if game is over and both players are connected
         if (game.players.X && game.players.O) {
-          game.state = createInitialState();
+          // Keep scores and alternate starting player
+          const scores = { ...game.state.scores };
+          const newStartingPlayer = game.state.startingPlayer === 'X' ? 'O' : 'X';
+          game.state = createInitialState(newStartingPlayer);
+          game.state.scores = scores;
+          
+          // Broadcast new state
           broadcastGameState(game);
         }
       }
@@ -145,38 +170,54 @@ wss.on('connection', (ws, req) => {
       if (!game.players.X && !game.players.O) {
         games.delete(roomId);
       } else {
-        // Notify other player about disconnect
-        const otherRole = role === 'X' ? 'O' : 'X';
-        game.players[otherRole]?.send(JSON.stringify({ type: 'playerDisconnected' }));
+        // Broadcast updated state to remaining player
+        broadcastGameState(game);
       }
     }
   });
 });
 
-function checkWinner(board: Board): Player | 'draw' | null {
-  // Check rows, columns and diagonals
+function checkWinner(board: Board): { winner: Player | 'draw' | null; winningCells?: [number, number][] } {
+  // Check rows
   for (let i = 0; i < 3; i++) {
     if (board[i][0] && board[i][0] === board[i][1] && board[i][0] === board[i][2]) {
-      return board[i][0];
-    }
-    if (board[0][i] && board[0][i] === board[1][i] && board[0][i] === board[2][i]) {
-      return board[0][i];
+      return { 
+        winner: board[i][0],
+        winningCells: [[i,0], [i,1], [i,2]]
+      };
     }
   }
 
+  // Check columns
+  for (let i = 0; i < 3; i++) {
+    if (board[0][i] && board[0][i] === board[1][i] && board[0][i] === board[2][i]) {
+      return {
+        winner: board[0][i],
+        winningCells: [[0,i], [1,i], [2,i]]
+      };
+    }
+  }
+
+  // Check diagonals
   if (board[0][0] && board[0][0] === board[1][1] && board[0][0] === board[2][2]) {
-    return board[0][0];
+    return {
+      winner: board[0][0],
+      winningCells: [[0,0], [1,1], [2,2]]
+    };
   }
   if (board[0][2] && board[0][2] === board[1][1] && board[0][2] === board[2][0]) {
-    return board[0][2];
+    return {
+      winner: board[0][2],
+      winningCells: [[0,2], [1,1], [2,0]]
+    };
   }
 
   // Check for draw
   if (board.every(row => row.every(cell => cell !== null))) {
-    return 'draw';
+    return { winner: 'draw' };
   }
 
-  return null;
+  return { winner: null };
 }
 
 const PORT = process.env.PORT || 3001;
