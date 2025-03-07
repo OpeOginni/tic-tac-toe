@@ -3,13 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Player = 'X' | 'O';
-
 export default function GameStarter() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const startGame = async (selectedRole: Player) => {
+  const startGame = async () => {
     setIsLoading(true);
     try {
       // Generate a random room ID
@@ -24,7 +22,7 @@ export default function GameStarter() {
   return (
     <div className="flex gap-8">
       <button
-        onClick={() => startGame('X')}
+        onClick={() => startGame()}
         className="px-16 py-8 text-6xl rounded-2xl bg-gray-800 text-blue-400 hover:bg-gray-700 transition-all hover:scale-105"
         disabled={isLoading}
         style={{ fontFamily: 'Comic Sans MS' }}
@@ -32,7 +30,7 @@ export default function GameStarter() {
         X
       </button>
       <button
-        onClick={() => startGame('O')}
+        onClick={() => startGame()}
         className="px-16 py-8 text-6xl rounded-2xl bg-gray-800 text-red-400 hover:bg-gray-700 transition-all hover:scale-105"
         disabled={isLoading}
         style={{ fontFamily: 'Comic Sans MS' }}
