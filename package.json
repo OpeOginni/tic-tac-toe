@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "server:dev": "tsx watch server/server.ts",
+    "server:dev": "bun run server/server.ts",
     "server:build": "tsc server/server.ts --outDir dist",
     "server:start": "node dist/server.js"
   },
