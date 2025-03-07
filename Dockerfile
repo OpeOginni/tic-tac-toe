@@ -1,4 +1,4 @@
-FROM node:18-alpine as builder
+FROM node:22.12 as builder
 
 # Install bun
 RUN npm install -g bun
@@ -14,7 +14,7 @@ COPY server ./server
 RUN npm run server:build
 
 # Start a new stage for a smaller final image
-FROM node:18-alpine
+FROM node:22.12
 
 # Install bun
 RUN npm install -g bun
