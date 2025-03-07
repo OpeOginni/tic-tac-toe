@@ -119,7 +119,7 @@ export default function TicTacToe() {
     <div className="flex flex-col items-center justify-center min-h-screen">
       <div className="p-8">
         <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-6 text-white">H&B Tic Tac Toe</h1>
+          <h1 className="text-4xl font-bold mb-6 text-white">SOPH & BRIGHT Tic Tac Toe</h1>
           {error ? (
             <div className="mb-6">
               <p className="text-xl text-red-400">{error}</p>
