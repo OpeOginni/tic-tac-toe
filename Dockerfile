@@ -1,4 +1,4 @@
-FROM node:22.12 as builder
+FROM node:18-alpine as builder
 
 # Install bun
 RUN npm install -g bun
@@ -14,7 +14,7 @@ COPY server ./server
 RUN npm run server:build
 
 # Start a new stage for a smaller final image
-FROM node:22.12
+FROM node:18-alpine
 
 # Install bun
 RUN npm install -g bun
@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Copy only production dependencies
 COPY package*.json bun.lockb ./
-RUN bun install --production
+RUN bun install
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
