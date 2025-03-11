@@ -35,7 +35,7 @@ const wss = new WebSocketServer({ server });
 
 function createInitialState(startingPlayer: Player = 'X'): GameState {
   return {
-    board: Array(3).fill(null).map(() => Array(3).fill(null)),
+    board: Array(4).fill(null).map(() => Array(4).fill(null)),
     currentPlayer: startingPlayer,
     winner: null,
     scores: {
@@ -117,8 +117,8 @@ wss.on('connection', (ws, req) => {
       if (message.type === 'move' && role === game.state.currentPlayer) {
         const { row, col } = message;
         if (
-          row >= 0 && row < 3 && 
-          col >= 0 && col < 3 && 
+          row >= 0 && row < 4 && 
+          col >= 0 && col < 4 && 
           !game.state.board[row][col] &&
           !game.state.winner
         ) {
@@ -179,36 +179,36 @@ wss.on('connection', (ws, req) => {
 
 function checkWinner(board: Board): { winner: Player | 'draw' | null; winningCells?: [number, number][] } {
   // Check rows
-  for (let i = 0; i < 3; i++) {
-    if (board[i][0] && board[i][0] === board[i][1] && board[i][0] === board[i][2]) {
+  for (let i = 0; i < 4; i++) {
+    if (board[i][0] && board[i][0] === board[i][1] && board[i][0] === board[i][2] && board[i][0] === board[i][3]) {
       return { 
         winner: board[i][0],
-        winningCells: [[i,0], [i,1], [i,2]]
+        winningCells: [[i,0], [i,1], [i,2], [i,3]]
       };
     }
   }
 
   // Check columns
-  for (let i = 0; i < 3; i++) {
-    if (board[0][i] && board[0][i] === board[1][i] && board[0][i] === board[2][i]) {
+  for (let i = 0; i < 4; i++) {
+    if (board[0][i] && board[0][i] === board[1][i] && board[0][i] === board[2][i] && board[0][i] === board[3][i]) {
       return {
         winner: board[0][i],
-        winningCells: [[0,i], [1,i], [2,i]]
+        winningCells: [[0,i], [1,i], [2,i], [3,i]]
       };
     }
   }
 
   // Check diagonals
-  if (board[0][0] && board[0][0] === board[1][1] && board[0][0] === board[2][2]) {
+  if (board[0][0] && board[0][0] === board[1][1] && board[0][0] === board[2][2] && board[0][0] === board[3][3]) {
     return {
       winner: board[0][0],
-      winningCells: [[0,0], [1,1], [2,2]]
+      winningCells: [[0,0], [1,1], [2,2], [3,3]]
     };
   }
-  if (board[0][2] && board[0][2] === board[1][1] && board[0][2] === board[2][0]) {
+  if (board[0][3] && board[0][3] === board[1][2] && board[0][3] === board[2][1] && board[0][3] === board[3][0]) {
     return {
-      winner: board[0][2],
-      winningCells: [[0,2], [1,1], [2,0]]
+      winner: board[0][3],
+      winningCells: [[0,3], [1,2], [2,1], [3,0]]
     };
   }
 
