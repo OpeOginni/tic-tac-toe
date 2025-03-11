@@ -178,61 +178,38 @@ wss.on('connection', (ws, req) => {
 });
 
 function checkWinner(board: Board): { winner: Player | 'draw' | null; winningCells?: [number, number][] } {
-  // Check rows for 3 in a row
+  // Check rows
   for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 2; j++) {
-      if (board[i][j] && 
-          board[i][j] === board[i][j+1] && 
-          board[i][j] === board[i][j+2]) {
-        return { 
-          winner: board[i][j],
-          winningCells: [[i,j], [i,j+1], [i,j+2]]
-        };
-      }
+    if (board[i][0] && board[i][0] === board[i][1] && board[i][0] === board[i][2] && board[i][0] === board[i][3]) {
+      return { 
+        winner: board[i][0],
+        winningCells: [[i,0], [i,1], [i,2], [i,3]]
+      };
     }
   }
 
-  // Check columns for 3 in a row
-  for (let i = 0; i < 2; i++) {
-    for (let j = 0; j < 4; j++) {
-      if (board[i][j] && 
-          board[i][j] === board[i+1][j] && 
-          board[i][j] === board[i+2][j]) {
-        return {
-          winner: board[i][j],
-          winningCells: [[i,j], [i+1,j], [i+2,j]]
-        };
-      }
+  // Check columns
+  for (let i = 0; i < 4; i++) {
+    if (board[0][i] && board[0][i] === board[1][i] && board[0][i] === board[2][i] && board[0][i] === board[3][i]) {
+      return {
+        winner: board[0][i],
+        winningCells: [[0,i], [1,i], [2,i], [3,i]]
+      };
     }
   }
 
-  // Check diagonals for 3 in a row
-  for (let i = 0; i < 2; i++) {
-    for (let j = 0; j < 2; j++) {
-      // Check diagonal from top-left to bottom-right
-      if (board[i][j] && 
-          board[i][j] === board[i+1][j+1] && 
-          board[i][j] === board[i+2][j+2]) {
-        return {
-          winner: board[i][j],
-          winningCells: [[i,j], [i+1,j+1], [i+2,j+2]]
-        };
-      }
-    }
+  // Check diagonals
+  if (board[0][0] && board[0][0] === board[1][1] && board[0][0] === board[2][2] && board[0][0] === board[3][3]) {
+    return {
+      winner: board[0][0],
+      winningCells: [[0,0], [1,1], [2,2], [3,3]]
+    };
   }
-
-  for (let i = 0; i < 2; i++) {
-    for (let j = 2; j < 4; j++) {
-      // Check diagonal from top-right to bottom-left
-      if (board[i][j] && 
-          board[i][j] === board[i+1][j-1] && 
-          board[i][j] === board[i+2][j-2]) {
-        return {
-          winner: board[i][j],
-          winningCells: [[i,j], [i+1,j-1], [i+2,j-2]]
-        };
-      }
-    }
+  if (board[0][3] && board[0][3] === board[1][2] && board[0][3] === board[2][1] && board[0][3] === board[3][0]) {
+    return {
+      winner: board[0][3],
+      winningCells: [[0,3], [1,2], [2,1], [3,0]]
+    };
   }
 
   // Check for draw
