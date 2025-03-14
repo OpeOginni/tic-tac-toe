@@ -35,7 +35,7 @@ export default function TicTacToe() {
     localStorage.setItem('playerId', storedPlayerId);
   }, []);
 
-  const [board, setBoard] = useState<Board>(Array(4).fill(null).map(() => Array(4).fill(null)));
+  const [board, setBoard] = useState<Board>(Array(3).fill(null).map(() => Array(3).fill(null)));
   const [currentPlayer, setCurrentPlayer] = useState<Player>('X');
   const [winner, setWinner] = useState<Winner>(null);
   const [copied, setCopied] = useState(false);
@@ -170,16 +170,16 @@ export default function TicTacToe() {
         </div>
 
         <div className="mb-8 flex justify-center">
-          <div className="inline-grid grid-cols-4 bg-gray-900">
+          <div className="inline-grid grid-cols-3 bg-gray-900">
             {board.map((row, i) =>
               row.map((cell, j) => (
                 <button
                   key={`${i}-${j}`}
                   onClick={() => handleCellClick(i, j)}
                   disabled={!!winner || !!cell || currentPlayer !== playerRole || !isConnected || !opponentConnected}
-                  className={`w-20 h-20 flex items-center justify-center transition-all
-                    ${i < 3 ? 'border-b-2' : ''} 
-                    ${j < 3 ? 'border-r-2' : ''} 
+                  className={`w-28 h-28 flex items-center justify-center transition-all
+                    ${i < 2 ? 'border-b-2' : ''} 
+                    ${j < 2 ? 'border-r-2' : ''} 
                     border-gray-600
                     ${!cell && !winner && currentPlayer === playerRole && isConnected && opponentConnected
                       ? 'hover:bg-gray-800'
@@ -188,7 +188,7 @@ export default function TicTacToe() {
                   style={{ fontFamily: 'Comic Sans MS' }}
                 >
                   <span
-                    className={`text-5xl ${
+                    className={`text-7xl ${
                       isWinningCell(i, j)
                         ? 'text-green-400'
                         : cell === 'X'
