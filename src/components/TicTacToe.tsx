@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 type Player = 'X' | 'O';
 type Winner = Player | 'draw' | null;
@@ -153,9 +154,9 @@ export default function TicTacToe() {
           {error ? (
             <div className="mb-6">
               <p className="text-xl text-red-400">{error}</p>
-              <a href="/" className="mt-4 inline-block px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors">
+              <Link href="/" className="mt-4 inline-block px-6 py-2 text-sm rounded-full bg-gray-800 text-gray-400 hover:bg-gray-700 transition-colors">
                 Start New Game
-              </a>
+              </Link>
             </div>
           ) : (
             <>
