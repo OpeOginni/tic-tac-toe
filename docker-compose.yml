@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # Backend WebSocket Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tic-tac-toe-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    networks:
+      - tic-tac-toe-network
+    restart: unless-stopped
+
+  # Frontend Next.js App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tic-tac-toe-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - WS_URL=ws://tic-tac-toe-alb-887286269.us-east-1.elb.amazonaws.com:8080
+    networks:
+      - tic-tac-toe-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  tic-tac-toe-network:
+    driver: bridge
+    name: tic-tac-toe-network
+
+# Optional: Add volumes for development (uncomment if needed)
+# volumes:
+#   node_modules_frontend:
+#   node_modules_backend: 

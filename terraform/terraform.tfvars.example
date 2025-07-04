@@ -1,0 +1,102 @@
+# AWS Configuration
+aws_region = "us-east-1"
+aws_access_key_id = "your-access-key-id"
+aws_secret_access_key = "your-secret-access-key"
+aws_session_token = "your-session-token"  # Required for AWS student accounts
+
+# Project Configuration
+project_name = "tic-tac-toe"
+environment = "production"
+
+# Docker Configuration
+docker_hub_username = "your-dockerhub-username"
+
+# Frontend Configuration
+frontend_cpu = 256                    # CPU units (1024 = 1 vCPU)
+frontend_memory = 512                 # Memory in MB
+frontend_desired_capacity = 2         # Desired number of instances
+frontend_min_capacity = 1             # Minimum instances
+frontend_max_capacity = 10            # Maximum instances
+
+# Backend Configuration
+backend_cpu = 256                     # CPU units (1024 = 1 vCPU)
+backend_memory = 512                  # Memory in MB
+backend_desired_capacity = 2          # Desired number of instances
+backend_min_capacity = 1              # Minimum instances
+backend_max_capacity = 10             # Maximum instances
+
+# Auto Scaling Configuration
+cpu_target_value = 70                 # Target CPU utilization (%)
+memory_target_value = 80              # Target memory utilization (%)
+
+# Instance Type (AWS Student Account compatible)
+instance_type = "t3.small"            # Options: t3.nano, t3.micro, t3.small, t3.medium, t3.large
+
+# ===================================================================
+# SCALING CONFIGURATION EXAMPLES
+# ===================================================================
+# Copy and uncomment one of the configurations below based on your needs:
+
+# Development (Low Cost - Minimal Resources)
+
+# frontend_cpu = 256
+# frontend_memory = 512
+# frontend_desired_capacity = 1
+# frontend_min_capacity = 1
+# frontend_max_capacity = 3
+# backend_cpu = 256
+# backend_memory = 512
+# backend_desired_capacity = 1
+# backend_min_capacity = 1
+# backend_max_capacity = 3
+# instance_type = "t3.micro"
+# cpu_target_value = 80
+# memory_target_value = 85
+
+# Production (Balanced - Recommended)
+
+# frontend_cpu = 512
+# frontend_memory = 1024
+# frontend_desired_capacity = 2
+# frontend_min_capacity = 2
+# frontend_max_capacity = 10
+# backend_cpu = 512
+# backend_memory = 1024
+# backend_desired_capacity = 2
+# backend_min_capacity = 2
+# backend_max_capacity = 10
+# instance_type = "t3.small"
+# cpu_target_value = 70
+# memory_target_value = 80
+
+# High Traffic (Performance Focused)
+
+# frontend_cpu = 1024
+# frontend_memory = 2048
+# frontend_desired_capacity = 3
+# frontend_min_capacity = 3
+# frontend_max_capacity = 20
+# backend_cpu = 1024
+# backend_memory = 2048
+# backend_desired_capacity = 3
+# backend_min_capacity = 3
+# backend_max_capacity = 20
+# instance_type = "t3.medium"
+# cpu_target_value = 60
+# memory_target_value = 75
+
+# Enterprise (Maximum Scale)
+
+# frontend_cpu = 2048
+# frontend_memory = 4096
+# frontend_desired_capacity = 5
+# frontend_min_capacity = 5
+# frontend_max_capacity = 50
+# backend_cpu = 2048
+# backend_memory = 4096
+# backend_desired_capacity = 5
+# backend_min_capacity = 5
+# backend_max_capacity = 50
+# instance_type = "t3.large"
+# cpu_target_value = 50
+# memory_target_value = 70

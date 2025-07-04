@@ -32,7 +32,19 @@ type Game = {
 
 const games = new Map<string, Game>();
 
-const server = createServer();
+const server = createServer((req, res) => {
+  // Add health check endpoint
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() }));
+    return;
+  }
+  
+  // Handle other HTTP requests
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not Found');
+});
+
 const wss = new WebSocketServer({ server });
 
 function createInitialState(startingPlayer: Player = 'X', gridSize: GridSize = 3): GameState {
@@ -303,7 +315,8 @@ function checkWinner(board: Board, gridSize: GridSize): { winner: Player | 'draw
   return { winner: null };
 }
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`WebSocket server is running on port ${PORT}`);
+  console.log(`Health check available at http://localhost:${PORT}/health`);
 }); 

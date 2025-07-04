@@ -1,0 +1,10 @@
+# Minimal Configuration without Auto Scaling
+# Use this if auto-scaling doesn't work in AWS student accounts
+# To enable: rename this file to autoscaling.tf and rename the current autoscaling.tf to autoscaling.tf.disabled
+
+# Note: Manual scaling commands:
+# aws ecs update-service --cluster tic-tac-toe-cluster --service tic-tac-toe-frontend --desired-count <number>
+# aws ecs update-service --cluster tic-tac-toe-cluster --service tic-tac-toe-backend --desired-count <number>
+
+# No auto-scaling resources - services will run at desired capacity only
+# You can manually scale using AWS CLI or AWS Console 

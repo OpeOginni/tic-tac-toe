@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getWebSocketUrl } from '@/app/actions';
 
 type Player = 'X' | 'O';
 type Winner = Player | 'draw' | null;
@@ -21,8 +22,6 @@ type GameState = {
   gridSize: GridSize;
 };
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
-
 export default function TicTacToe() {
   const searchParams = useSearchParams();
   const roomId = searchParams.get('room');
@@ -32,12 +31,24 @@ export default function TicTacToe() {
   const [playerId, setPlayerId] = useState<string>('');
   const [playerRole, setPlayerRole] = useState<Player | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [wsUrl, setWsUrl] = useState<string>('');
   
   // Initialize playerId from localStorage on client side
   useEffect(() => {
     const storedPlayerId = localStorage.getItem('playerId') || Math.random().toString(36).substring(2);
     setPlayerId(storedPlayerId);
     localStorage.setItem('playerId', storedPlayerId);
+  }, []);
+
+  // Fetch WebSocket URL from server action
+  useEffect(() => {
+    getWebSocketUrl().then(url => {
+      console.log('WebSocket URL fetched from server:', url);
+      setWsUrl(url);
+    }).catch(err => {
+      console.error('Failed to fetch WebSocket URL:', err);
+      setWsUrl('ws://localhost:8080'); // fallback
+    });
   }, []);
 
   // Initialize with default 3x3 board - will be updated by server state
@@ -53,14 +64,16 @@ export default function TicTacToe() {
   const [gameGridSize, setGameGridSize] = useState<GridSize>(3);
 
   useEffect(() => {
-    if (!roomId || !playerId) return;
+    if (!roomId || !playerId || !wsUrl) return;
 
     // Connect to WebSocket with roomId, playerId, and gridSize
     // Note: gridSize is only used for new game creation, existing games ignore this
-    const wsUrl = `${WS_URL}?room=${roomId}&playerId=${playerId}&gridSize=${gridSize}`;
-    const socket = new WebSocket(wsUrl);
+    const socketUrl = `${wsUrl}?room=${roomId}&playerId=${playerId}&gridSize=${gridSize}`;
+    console.log('Connecting to WebSocket:', socketUrl); // Debug log
+    const socket = new WebSocket(socketUrl);
 
     socket.onopen = () => {
+      console.log('WebSocket connected successfully');
       setIsConnected(true);
     };
 
@@ -87,8 +100,13 @@ export default function TicTacToe() {
     };
 
     socket.onclose = () => {
+      console.log('WebSocket connection closed');
       setIsConnected(false);
       setOpponentConnected(false);
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
     };
 
     setWs(socket);
@@ -96,7 +114,7 @@ export default function TicTacToe() {
     return () => {
       socket.close();
     };
-  }, [roomId, playerId, gridSize]);
+  }, [roomId, playerId, gridSize, wsUrl]);
 
   const handleCellClick = (row: number, col: number) => {
     if (!ws || board[row][col] || winner || currentPlayer !== playerRole || !isConnected || !opponentConnected) return;

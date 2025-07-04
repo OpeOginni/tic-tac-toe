@@ -1,38 +1,52 @@
 {
-  "name": "tic-tac-toe",
-  "version": "0.1.0",
+  "name": "tic-tac-toe-monorepo",
+  "version": "1.0.0",
+  "description": "Real-time multiplayer tic-tac-toe game with Next.js frontend and WebSocket backend",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "server:dev": "bun run server/server.ts",
-    "server:build": "tsc server/server.ts --outDir dist",
-    "server:start": "node dist/server.js"
-  },
-  "dependencies": {
-    "@types/ws": "^8.18.0",
-    "dotenv": "^17.0.0",
-    "next": "15.3.4",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "ws": "^8.18.1"
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:frontend": "cd frontend && npm run start",
+    "start:backend": "cd backend && npm run start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:down": "docker-compose down",
+    "docker:push": "./docker-push.sh",
+    "deploy": "./deploy.sh",
+    "deploy:full": "./docker-push.sh && ./deploy.sh",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.4",
-    "tailwindcss": "^4",
-    "tsx": "^4.20.3",
-    "typescript": "^5"
+    "concurrently": "^8.2.2"
   },
-  "overrides": {
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6"
-  }
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/tic-tac-toe.git"
+  },
+  "keywords": [
+    "tic-tac-toe",
+    "multiplayer",
+    "real-time",
+    "websocket",
+    "nextjs",
+    "nodejs",
+    "aws",
+    "docker",
+    "terraform"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
