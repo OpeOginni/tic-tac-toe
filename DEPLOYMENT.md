@@ -24,9 +24,6 @@ AWS Student accounts only support specific instance types:
 ### **IAM Role Requirements**
 For AWS Student accounts, use **LabRole** for task execution and task roles to avoid permission errors. The Terraform configuration automatically detects and uses LabRole if available.
 
-### **Service Linked Roles**
-If you see "the ECS service linked role could not be assumed", use the back button and try again. This happens when the service linked role doesn't exist yet in your account.
-
 ## Docker Authentication
 
 ### **Public Docker Images (Recommended)**
@@ -115,18 +112,7 @@ Edit `terraform/terraform.tfvars` with your:
 - Docker Hub username
 - Scaling parameters (optional)
 
-### 2. Build and Deploy
-```bash
-# Build and push Docker images
-./docker-push.sh
-
-# Deploy infrastructure
-./deploy.sh
-```
-
-## Manual Deployment Steps
-
-### 1. Build and Push Docker Images
+### 2. Build and Push Docker Images
 ```bash
 # Use the automated script for multi-platform builds
 ./docker-push.sh
@@ -134,7 +120,7 @@ Edit `terraform/terraform.tfvars` with your:
 
 **Note**: This script automatically builds multi-platform images (ARM64 + AMD64) and pushes to Docker Hub. Make sure your Docker Hub repositories are **public** or configure authentication as described above.
 
-### 2. Deploy Infrastructure
+### 3. Deploy Infrastructure
 ```bash
 cd terraform
 terraform init
@@ -190,12 +176,6 @@ Monitor your deployment through AWS Console:
 - **Target group health**
 - **Auto scaling activities**
 
-### Service Status
-Check service status:
-```bash
-aws ecs describe-services --cluster tic-tac-toe-cluster --services tic-tac-toe-frontend tic-tac-toe-backend
-```
-
 ## Troubleshooting
 
 ### Common Issues
@@ -210,21 +190,6 @@ aws ecs describe-services --cluster tic-tac-toe-cluster --services tic-tac-toe-f
 8. **Environment variables not working**: Use standard Next.js runtime, not standalone mode
 9. **Platform compatibility errors**: Ensure multi-platform Docker images (ARM64 + AMD64)
 
-### Debugging Commands
-```bash
-# Check service status
-aws ecs describe-services --cluster tic-tac-toe-cluster --services tic-tac-toe-frontend
-
-# View auto scaling activities
-aws application-autoscaling describe-scaling-activities --service-namespace ecs
-
-# Check target group health
-aws elbv2 describe-target-health --target-group-arn <target-group-arn>
-
-# Get load balancer DNS name
-terraform output load_balancer_dns
-```
-
 ## Security Considerations
 
 - Services run in private subnets
@@ -238,45 +203,6 @@ To destroy all resources:
 ```bash
 cd terraform
 terraform destroy -auto-approve
-```
-
-## Advanced Scaling Scenarios
-
-### Geographic Scaling
-Update your `terraform.tfvars` file for different regions:
-
-```hcl
-# Deploy in us-east-1
-aws_region = "us-east-1"
-
-# Deploy in eu-west-1  
-aws_region = "eu-west-1"
-```
-
-### Multi-Environment Scaling
-Update your `terraform.tfvars` file for different environments:
-
-```hcl
-# Development
-environment = "dev"
-frontend_min_capacity = 1
-frontend_max_capacity = 3
-backend_min_capacity = 1
-backend_max_capacity = 3
-
-# Staging  
-environment = "staging"
-frontend_min_capacity = 2
-frontend_max_capacity = 5
-backend_min_capacity = 1
-backend_max_capacity = 4
-
-# Production
-environment = "prod"
-frontend_min_capacity = 3
-frontend_max_capacity = 20
-backend_min_capacity = 2
-backend_max_capacity = 15
 ```
 
 ## Support

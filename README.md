@@ -90,38 +90,198 @@ tic-tac-toe/
    ./deploy.sh
    ```
 
-## Development
+## Tic-Tac-Toe Game Deployment Guide
 
-### Frontend Development
-```bash
-cd frontend
-npm install
-npm run dev        # Start development server
-npm run build      # Build for production
-npm run lint       # Run linting
+This guide explains how to deploy the real-time multiplayer tic-tac-toe game on AWS with scalable infrastructure.
+
+### Architecture Overview
+
+The application is deployed using:
+- **AWS ECS Fargate** for containerized services
+- **Application Load Balancer (ALB)** for traffic distribution and WebSocket support
+- **Auto Scaling Groups** for elastic scaling
+- **VPC** with public/private subnets across multiple AZs
+- **Multi-platform Docker images** (ARM64 + AMD64) for compatibility
+
+## AWS Student Account Considerations
+
+### **IAM Role Requirements**
+For AWS Student accounts, use **LabRole** for task execution and task roles to avoid permission errors. The Terraform configuration automatically detects and uses LabRole if available.
+
+## Docker Authentication
+
+### **Public Docker Images (Recommended)**
+For simplicity, make your Docker Hub repositories **public**. This requires no authentication:
+
+1. Push your images to public Docker Hub repositories
+2. No additional configuration needed in Terraform
+
+## Scalability Features (NIST Rapid Elasticity)
+
+### 1. Horizontal Auto Scaling
+The infrastructure automatically scales based on:
+- **CPU Utilization**: Scales when CPU > 70%
+- **Memory Utilization**: Scales when memory > 80%
+- **Request Count**: Scales based on incoming requests
+
+### 2. Manual Scaling Configuration
+You can configure scaling parameters in `terraform/terraform.tfvars`:
+
+```hcl
+# Frontend and Backend scaling can be configured independently
+
+# Development Configuration
+frontend_min_capacity = 1
+frontend_max_capacity = 3
+frontend_desired_capacity = 1
+backend_min_capacity = 1
+backend_max_capacity = 3
+backend_desired_capacity = 1
+
+# Production Configuration
+frontend_min_capacity = 2
+frontend_max_capacity = 10
+frontend_desired_capacity = 3
+backend_min_capacity = 2
+backend_max_capacity = 8
+backend_desired_capacity = 2
+
+# High Traffic Configuration
+frontend_min_capacity = 3
+frontend_max_capacity = 20
+frontend_desired_capacity = 5
+backend_min_capacity = 3
+backend_max_capacity = 15
+backend_desired_capacity = 4
 ```
 
-### Backend Development
-```bash
-cd backend
-npm install
-npm run dev        # Start development server with hot reload
-npm run build      # Build TypeScript
-npm run start      # Start production server
+### 3. CPU and Memory Configuration for Different Loads
+```hcl
+# Light workload (Student account)
+frontend_cpu = 256    # 0.25 vCPU
+frontend_memory = 512 # 0.5 GB RAM
+backend_cpu = 256
+backend_memory = 512
+
+# Medium workload (Student account)
+frontend_cpu = 512    # 0.5 vCPU
+frontend_memory = 1024 # 1 GB RAM
+backend_cpu = 512
+backend_memory = 1024
+
+# Heavy workload (Student account)
+frontend_cpu = 1024   # 1 vCPU
+frontend_memory = 2048 # 2 GB RAM
+backend_cpu = 1024
+backend_memory = 2048
 ```
 
-### Docker Development
+## Prerequisites
+
+1. **AWS Student Account** with access credentials
+2. **Terraform** >= 1.0 installed
+3. **Docker** installed and running
+4. **Docker Hub** account for image registry
+
+## Quick Start
+
+### 1. Configure Deployment
+Copy and customize the configuration file:
 ```bash
-# Development with hot reload
-docker-compose -f docker-compose.dev.yml up
-
-# Production testing
-docker-compose up
-
-# Build specific service
-docker-compose build frontend
-docker-compose build backend
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 ```
+
+Edit `terraform/terraform.tfvars` with your:
+- AWS credentials (Access Key ID, Secret Access Key, Session Token)
+- Docker Hub username
+- Scaling parameters (optional)
+
+### 2. Build and Push Docker Images
+```bash
+# Use the automated script for multi-platform builds
+./docker-push.sh
+```
+
+**Note**: This script automatically builds multi-platform images (ARM64 + AMD64) and pushes to Docker Hub. Make sure your Docker Hub repositories are **public** or configure authentication as described above.
+
+### 3. Deploy Infrastructure
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply -auto-approve
+```
+
+## Scaling Operations
+
+### Manual Scaling
+To manually scale your services:
+
+```bash
+# Scale frontend to 5 instances
+aws ecs update-service --cluster tic-tac-toe-cluster \
+                      --service tic-tac-toe-frontend \
+                      --desired-count 5
+
+# Scale backend to 3 instances
+aws ecs update-service --cluster tic-tac-toe-cluster \
+                      --service tic-tac-toe-backend \
+                      --desired-count 3
+```
+
+### Update Scaling Parameters
+Edit `terraform/terraform.tfvars` and run `terraform apply`:
+
+Example for high-traffic scenario:
+```hcl
+frontend_min_capacity = 3
+frontend_max_capacity = 15
+frontend_desired_capacity = 5
+backend_min_capacity = 2
+backend_max_capacity = 10
+backend_desired_capacity = 3
+cpu_target_value = 60
+memory_target_value = 70
+```
+
+### Auto Scaling Policies
+The system includes multiple scaling policies:
+
+1. **CPU-based scaling**: Targets 70% CPU utilization
+2. **Memory-based scaling**: Targets 80% memory utilization
+3. **Request-based scaling**: Scales based on request count per target
+
+## Monitoring and Observability
+
+### Key Metrics
+Monitor your deployment through AWS Console:
+- **ECS Service CPU/Memory utilization**
+- **ALB request count and response times**
+- **Target group health**
+- **Auto scaling activities**
+
+## Security Considerations
+
+- Services run in private subnets
+- ALB in public subnets with security groups
+- IAM roles with least privilege (LabRole for student accounts)
+- VPC with proper network ACLs
+
+## Cleanup
+
+To destroy all resources:
+```bash
+cd terraform
+terraform destroy -auto-approve
+```
+
+## Support
+
+For issues or questions:
+1. Check ECS service status via AWS Console
+2. Review Terraform state
+3. Verify Docker images
+4. Check AWS service limits 
 
 ## Game Rules
 
