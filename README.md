@@ -354,4 +354,4 @@ See `terraform/terraform.tfvars.example` for all configuration options including
 This project is licensed under the MIT License.
 
 ### Contibutors
-- Opeyemi Oginni
+- Opeyemi Bright Oginni - Group 40
